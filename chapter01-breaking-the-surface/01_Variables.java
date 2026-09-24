@@ -59,6 +59,12 @@ class Variables {
         //    What changes? Which is correct for rounding up currency?
         // 3. What happens if you add two Integer.MAX_VALUE values as int vs long?
 
+        byte x1 = 127;
+        x1++;
+        System.out.println(x1);
+
+        System.out.println(Math.round(narrowed));
+
 
     }
 }

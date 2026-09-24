@@ -1,7 +1,7 @@
 /**
  * EXERCISE — Chapter 15: Make a Connection (Concurrency)
  *
- * Problem: Producer–Consumer with BlockingQueue
+ * Problem 1: Producer–Consumer with BlockingQueue
  * (Classic OS concurrency problem, commonly asked at FAANG)
  * -------------------------------------------------------
  *
@@ -31,9 +31,38 @@
  *
  * Bonus: Use AtomicInteger to count produced/consumed safely across threads.
  * Bonus: Add a monitoring thread that prints queue size every 200ms.
+ *
+ * Problem 2: Bounded Connection Pool (Semaphore) + Startup Barrier (CountDownLatch)
+ * -------------------------------------------------------------------------------------
+ * BlockingQueue solves producer-consumer; these two primitives solve different,
+ * equally common problems: capping concurrent access to a limited resource, and
+ * making N threads wait until everyone is ready before starting.
+ *
+ * 1. ConnectionPool(int maxConnections):
+ *      - Semaphore permits = new Semaphore(maxConnections)
+ *      - Connection acquire() throws InterruptedException — permits.acquire(),
+ *        then return a (fake) Connection
+ *      - void release(Connection c) — permits.release()
+ *    Test: with maxConnections=3, launch 10 threads that acquire(), sleep 50ms,
+ *    release(). Track the max concurrently-held count with an AtomicInteger
+ *    (increment on acquire, decrement on release, record the running max) and
+ *    assert it never exceeds 3.
+ *
+ * 2. Startup barrier: 5 "service" threads each take a random 0-200ms to become
+ *    ready, then call latch.countDown(). A CountDownLatch(5) blocks a "traffic"
+ *    thread via await() until all 5 have counted down. Print "All services warm
+ *    — starting traffic" only after await() returns.
+ *
+ * 3. Bonus — reproduce then fix a deadlock: two ReentrantLocks (lockA, lockB).
+ *    ThreadA acquires lockA then tries lockB; ThreadB acquires lockB then tries
+ *    lockA at the same time — classic lock-ordering deadlock. Detect it with
+ *    tryLock(timeout) instead of lock() so the program can print "deadlock
+ *    avoided" instead of hanging forever. Then fix it for real by making BOTH
+ *    threads always acquire lockA before lockB (consistent global ordering).
  */
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Chapter15Exercise {
 
@@ -79,6 +108,58 @@ public class Chapter15Exercise {
         }
     }
 
+    // ========= Problem 2: Semaphore-bounded ConnectionPool =========
+    static class Connection {
+        final int id;
+        Connection(int id) { this.id = id; }
+    }
+
+    static class ConnectionPool {
+        private final Semaphore permits;
+        private final AtomicInteger nextId = new AtomicInteger(0);
+
+        ConnectionPool(int maxConnections) {
+            this.permits = new Semaphore(maxConnections);
+        }
+
+        Connection acquire() throws InterruptedException {
+            // TODO: permits.acquire(); then return new Connection(nextId.getAndIncrement());
+            return null;
+        }
+
+        void release(Connection c) {
+            // TODO: permits.release();
+        }
+    }
+
+    // ========= Problem 2: CountDownLatch startup barrier =========
+    static void runStartupBarrierDemo() throws InterruptedException {
+        // TODO: CountDownLatch latch = new CountDownLatch(5);
+        // TODO: launch 5 "service" threads: sleep(random 0-200ms), print "service N ready",
+        //       then latch.countDown()
+        // TODO: launch a "traffic" thread: latch.await(), then print
+        //       "All services warm — starting traffic"
+        // TODO: join all threads
+    }
+
+    // ========= Problem 2 Bonus: deadlock, then fix via lock ordering =========
+    static void runDeadlockDemo() throws InterruptedException {
+        ReentrantLock lockA = new ReentrantLock();
+        ReentrantLock lockB = new ReentrantLock();
+        // TODO: ThreadA: tryLock lockA, then tryLock lockB (both with a timeout, e.g. 500ms)
+        // TODO: ThreadB: tryLock lockB, then tryLock lockA (same timeout)
+        // TODO: if either tryLock times out, print "deadlock avoided" and release what was held
+        // TODO: join both threads
+    }
+
+    static void runFixedLockOrderingDemo() throws InterruptedException {
+        ReentrantLock lockA = new ReentrantLock();
+        ReentrantLock lockB = new ReentrantLock();
+        // TODO: BOTH threads acquire lockA before lockB (consistent global ordering) —
+        //       re-run the same scenario as runDeadlockDemo() and confirm it completes
+        //       cleanly every time, no timeout needed
+    }
+
     public static void main(String[] args) throws InterruptedException {
         BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
 
@@ -104,5 +185,17 @@ public class Chapter15Exercise {
         System.out.println("Consumed: " + consumed.get());
         System.out.println("Time: " + elapsed + "ms");
         System.out.println("Expected: 50 produced, 50 consumed");
+
+        System.out.println("\n=== Problem 2: Semaphore Connection Pool ===");
+        // TODO: ConnectionPool pool2 = new ConnectionPool(3);
+        // TODO: launch 10 threads: acquire(), track running max held (AtomicInteger),
+        //       sleep 50ms, release(); join all; print observed max (expected <= 3)
+
+        System.out.println("\n=== Problem 2: CountDownLatch Startup Barrier ===");
+        runStartupBarrierDemo();
+
+        System.out.println("\n=== Problem 2 Bonus: Deadlock, Then Fix ===");
+        runDeadlockDemo();
+        runFixedLockOrderingDemo();
     }
 }

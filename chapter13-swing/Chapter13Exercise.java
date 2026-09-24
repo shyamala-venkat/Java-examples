@@ -1,7 +1,7 @@
 /**
  * EXERCISE — Chapter 13: Work on Your Swing
  *
- * Problem: Login form with validation
+ * Problem 1: Login form with validation
  * -------------------------------------------------------
  *
  * Build a Swing login form with:
@@ -21,6 +21,32 @@
  *   - LoginForm class builds the UI and wires up validation
  *
  * NOTE: headless mode tests FormValidator without UI.
+ *
+ * Problem 2: SQL-style Injection — Find the Exploit, Then Fix It
+ * -------------------------------------------------------------------
+ * VulnerableUserStore below simulates a DB lookup by building a query STRING
+ * via concatenation — the classic root cause of SQL injection. It's given
+ * fully implemented as the vulnerable baseline; don't change it.
+ *
+ * 1. VulnerableUserStore.findByCredentials(username, password): builds
+ *      "SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'"
+ *    then "runs" it against an in-memory user list by checking whether the raw
+ *    string would structurally bypass the password check (given below).
+ *
+ * 2. Exploit it: call findByCredentials("admin' --", "wrong-password"). The `--`
+ *    comments out everything after it in the built query — including the
+ *    password check — so it logs in as admin with NO valid password. Print
+ *    whether the exploit succeeded.
+ *
+ * 3. Fix it: implement SafeUserStore.findByCredentials(username, password) that
+ *    NEVER builds a query string from user input — compare fields directly
+ *    (this is what a parameterized query does under the hood: the input is
+ *    data, never part of the command). Also reject usernames containing
+ *    anything outside [a-zA-Z0-9_] BEFORE the lookup even runs (input
+ *    allow-listing — defense in depth, not a replacement for parameterization).
+ *
+ * 4. Re-run the same exploit attempt against SafeUserStore; confirm it
+ *    correctly rejects the injection attempt and does NOT log in as admin.
  */
 import javax.swing.*;
 import java.awt.*;
@@ -35,6 +61,44 @@ public class Chapter13Exercise {
             // TODO: validate username (3-20 chars, alphanumeric)
             // TODO: validate password (min 8 chars, at least one digit)
             return errors;
+        }
+    }
+
+    // ========= Problem 2: given vulnerable baseline — do not fix this class =========
+    static class VulnerableUserStore {
+        record User(String username, String password) {}
+        private final List<User> users = List.of(
+            new User("admin", "S3curePass!"),
+            new User("alice", "alicepw123")
+        );
+
+        // Simulates running a concatenated SQL string against the DB.
+        // A real DB would execute this string; here we approximate the same
+        // vulnerability by checking whether an injected "--" comments out the
+        // password clause, which is exactly what happens in a real SQL engine.
+        boolean findByCredentials(String username, String password) {
+            String query = "SELECT * FROM users WHERE username='" + username +
+                "' AND password='" + password + "'";
+            System.out.println("  [query] " + query);
+
+            int commentIdx = username.indexOf("--");
+            if (commentIdx >= 0) {
+                String injectedUsername = username.substring(0, commentIdx);
+                return users.stream().anyMatch(u -> u.username().equals(injectedUsername));
+            }
+            return users.stream().anyMatch(u ->
+                u.username().equals(username) && u.password().equals(password));
+        }
+    }
+
+    // ========= Problem 2: TODO — fix with parameterized-style lookup + allow-listing =========
+    static class SafeUserStore {
+        // TODO: same user list as VulnerableUserStore
+
+        boolean findByCredentials(String username, String password) {
+            // TODO: reject username if it contains anything outside [a-zA-Z0-9_]
+            // TODO: compare fields directly — never build a query string from input
+            return false;
         }
     }
 
@@ -105,6 +169,18 @@ public class Chapter13Exercise {
         if (!GraphicsEnvironment.isHeadless()) {
             SwingUtilities.invokeLater(Chapter13Exercise::buildAndShow);
         }
+
+        System.out.println("\n=== Problem 2: SQL Injection Exploit ===");
+        VulnerableUserStore vulnerable = new VulnerableUserStore();
+        boolean exploited = vulnerable.findByCredentials("admin' --", "wrong-password");
+        System.out.println("Logged in as admin without password? " + exploited +
+            " (expected true — VULNERABLE)");
+
+        System.out.println("\n=== Problem 2: SafeUserStore (fixed) ===");
+        SafeUserStore safe = new SafeUserStore();
+        boolean blocked = safe.findByCredentials("admin' --", "wrong-password");
+        System.out.println("Logged in as admin without password? " + blocked +
+            " (expected false — exploit blocked)");
     }
 
     static void test(FormValidator v, String user, String pass, String scenario) {

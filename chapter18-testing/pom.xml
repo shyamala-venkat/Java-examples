@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Scoped to this chapter only — the rest of the repo intentionally stays
+  zero-dependency / single-file javac. JUnit and Mockito are real libraries
+  that need real dependency management, which is exactly what Maven/Gradle
+  are for in production Java projects.
+
+  Run:  cd chapter18-testing && mvn test
+  Or:   open this folder as a Maven project in IntelliJ and run tests from
+        the gutter icons next to @Test / @Nested / the class name.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.study.headfirstjava</groupId>
+    <artifactId>chapter18-testing</artifactId>
+    <version>1.0</version>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!-- Files sit flat in this folder (matching every other chapter's layout)
+             instead of the Maven-standard src/test/java tree. -->
+        <testSourceDirectory>${basedir}</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!-- Surefire matches these patterns against COMPILED CLASS NAMES, not
+                         source filenames — the file 01_JUnitAndMockito.java compiles to
+                         class JUnitAndMockito, which is what has to be listed here. Neither
+                         name follows Surefire's default *Test.java convention, so both are
+                         listed explicitly. -->
+                    <includes>
+                        <include>JUnitAndMockito.java</include>
+                        <include>Chapter18Exercise.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

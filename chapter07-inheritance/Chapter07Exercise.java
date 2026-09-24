@@ -1,7 +1,7 @@
 /**
  * EXERCISE — Chapter 7: Inheritance
  *
- * Problem: Employee Payroll System
+ * Problem 1: Employee Payroll System
  * ---------------------------------
  * Design a payroll system for a tech company with these employee types:
  *
@@ -28,10 +28,87 @@
  *
  * Note: For Contractor, totalCost() should include the agencyCost().
  *       Override totalCost() in Contractor — think carefully about LSP here.
+ *
+ * Problem 2: SOLID Refactor — Break the God Class
+ * -------------------------------------------------
+ * OrderProcessorBad below "works" but violates SRP (it validates, prices,
+ * charges payment, and emails — four unrelated reasons to change) and OCP
+ * (adding a new payment provider means editing this class directly).
+ *
+ * Your task: refactor it into collaborators WITHOUT changing observable output.
+ *   - OrderValidator                    — SRP: validation has its own reason to change
+ *   - TaxCalculator                     — OCP: swap tax rules without touching orchestration
+ *   - PaymentCharger interface +
+ *     CreditCardCharger implementation  — DIP: orchestrator depends on an abstraction,
+ *                                          not a concrete gateway (mirrors real payment
+ *                                          integration work)
+ *   - EmailNotifier                     — SRP again: notification is not order logic
+ *   - OrderProcessor                    — slim orchestrator: wires collaborators via its
+ *                                          constructor (manual dependency injection) and
+ *                                          contains NO business logic itself
+ *
+ * For each class you write, add a one-line comment naming which SOLID principle
+ * the split satisfies.
+ *
+ * Verify: OrderProcessor.process(order) on the same test orders prints IDENTICAL
+ * output to OrderProcessorBad.process(order).
  */
 import java.util.*;
 
 public class Chapter07Exercise {
+
+    // ========= Problem 2 baseline: the God class (given — do not refactor this one) =========
+    static class OrderProcessorBad {
+        record Order(String id, double amount, String customerEmail, boolean expedited) {}
+
+        void process(Order order) {
+            // validate
+            if (order.amount() <= 0) throw new IllegalArgumentException("Invalid amount");
+            if (order.customerEmail() == null || !order.customerEmail().contains("@"))
+                throw new IllegalArgumentException("Invalid email");
+
+            // calculate tax
+            double taxRate = order.expedited() ? 0.10 : 0.08;
+            double total = order.amount() * (1 + taxRate);
+
+            // charge payment (pretend gateway call)
+            System.out.printf("  [charge] $%.2f to card for order %s%n", total, order.id());
+
+            // send email
+            System.out.println("  [email] Sent confirmation to " + order.customerEmail());
+
+            System.out.printf("Order %s processed: total=$%.2f%n", order.id(), total);
+        }
+    }
+
+    // ========= Problem 2: TODO — refactor into collaborators (see problem statement) =========
+    interface PaymentCharger {
+        void charge(double amount, String orderId);
+    }
+
+    static class OrderValidator {
+        // TODO: void validate(OrderProcessorBad.Order order) — same rules as OrderProcessorBad
+    }
+
+    static class TaxCalculator {
+        // TODO: double totalWithTax(OrderProcessorBad.Order order) — same rates as OrderProcessorBad
+    }
+
+    static class CreditCardCharger implements PaymentCharger {
+        @Override public void charge(double amount, String orderId) {
+            // TODO: same console line as OrderProcessorBad's charge step
+        }
+    }
+
+    static class EmailNotifier {
+        // TODO: void sendConfirmation(String email) — same console line as OrderProcessorBad
+    }
+
+    static class OrderProcessor {
+        // TODO: constructor takes OrderValidator, TaxCalculator, PaymentCharger, EmailNotifier
+        // TODO: void process(OrderProcessorBad.Order order) — delegates to each collaborator,
+        //       no business logic here, only orchestration
+    }
 
     static abstract class Employee {
         final String id, name;
@@ -66,5 +143,16 @@ public class Chapter07Exercise {
 
         System.out.println("\n=== Summary ===");
         // TODO: highest paid, lowest paid, total payroll
+
+        System.out.println("\n=== Problem 2: SOLID Refactor ===");
+        OrderProcessorBad.Order order = new OrderProcessorBad.Order(
+            "O-100", 199.99, "shopper@example.com", true);
+
+        System.out.println("-- OrderProcessorBad (baseline) --");
+        new OrderProcessorBad().process(order);
+
+        System.out.println("-- OrderProcessor (refactored) --");
+        // TODO: wire up OrderProcessor with its collaborators and call process(order);
+        //       output above should match the baseline exactly
     }
 }

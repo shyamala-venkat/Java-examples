@@ -37,6 +37,16 @@ All classes have a `main` method and can be run independently.
 | 15 | Make a Connection | `chapter15-networking/Chapter15Main.java` |
 | 16 | Data Structures | `chapter16-collections/Chapter16Main.java` |
 | 17 | Lambda and Streams | `chapter17-lambdas-streams/Chapter17Main.java` |
+| 18 | Testing Like a Professional (JUnit 5 + Mockito) | `chapter18-testing/Chapter18Main.java` |
+
+Chapter 18 isn't from Head First Java — it and the senior-level "Problem 2/3"
+exercises bolted onto chapters 07, 08, 10, 13, 14, 15, 16 (SOLID, Factory/
+Adapter, sealed classes + pattern matching, static memory leaks, injection
+vulnerabilities, hand-rolled JSON via reflection, transaction semantics,
+Semaphore/CountDownLatch/deadlocks, equals()/hashCode() contract) were added
+2026-09-21 to cover senior-engineer interview topics the book's 17 chapters
+don't reach. See each `ChapterNNExercise.java`'s doc comment for the full
+problem statement.
 
 ## Conversation Log
 
@@ -48,12 +58,44 @@ All classes have a `main` method and can be run independently.
 - Created all 17 chapter directories with example Java classes
 - Each class covers key concepts with comments + one exercise problem
 
-**How to run any chapter:**
+**How to run any chapter (01-17):**
 ```bash
 cd chapter01-breaking-the-surface
 javac Chapter01Main.java
 java Chapter01Main
 ```
+
+**How to run chapter 18 (needs JUnit 5 + Mockito, not plain javac):**
+```bash
+cd chapter18-testing
+mvn test
+```
+Or open `chapter18-testing/` as a Maven project in IntelliJ and run tests from
+the gutter icons. `pom.xml` there is scoped to this chapter only — every other
+chapter stays zero-dependency, single-file `javac`.
+
+### 2026-09-21 — Session 2
+**User request:** Assess whether the existing chapters/exercises align with real
+senior Java engineer work, and add any missing must-know concepts as exercises.
+
+**Assessment:** existing content was already unusually senior-tilted (Big-O
+notes, LSP/CME/RCE/backpressure callouts, production caveats throughout).
+Confirmed gaps: automated testing (entirely absent), concurrency primitives
+beyond executors/futures, equals/hashCode contract, Factory/Adapter patterns,
+sealed classes + pattern matching, static-field memory leaks, hand-rolled JSON
+via reflection, injection vulnerabilities, SOLID refactor practice, in-memory
+transaction semantics.
+
+**Actions taken:**
+- Added "Problem 2" (and "Problem 3" on ch08/ch14) skeleton exercises, in the
+  same TODO-driven style as the existing problems, to chapters 07, 08, 10, 13,
+  14, 15, 16 — see the Chapter Map note above for the full topic list.
+- Created new `chapter18-testing/` (JUnit 5 + Mockito) with a concept file, an
+  exercise file, and a `pom.xml` scoped to just that chapter.
+- Verified: all 17 javac-based chapters still compile clean as one batch;
+  `mvn test` in chapter18 resolves dependencies and passes (concept file's
+  real tests all pass; the exercise file's 4 stub tests pass vacuously as
+  expected, since their bodies are still TODOs for the learner to fill in).
 
 ## Notes for Follow-up Questions
 - Ask follow-up questions on any class — the classes are designed to be starting points for discussion

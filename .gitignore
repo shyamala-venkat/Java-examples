@@ -2,6 +2,7 @@
 *.jar
 *.ser
 out/
+target/
 .idea/
 *.iml
 .DS_Store
